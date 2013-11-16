@@ -22,7 +22,6 @@ robbe是建立在friso中文分词上的一个高性能php中文分词扩展。�
 Ueaner博客文档: http://blog.aboutc.net/php/59/php-installation-robbe-chinese-word-extension <br />
 
 <h3>四. 联系作者: </h3>
-作者：狮子的魂 - 陈鑫
-电子邮件：chenxin619315@gmail.com
-robbe详细介绍：http://code.google.com/p/robbe
-https://code.google.com/p/robbe/#三。使用方法
+作者：狮子的魂 <br />
+电子邮件：chenxin619315@gmail.com <br />
+QQ: 1187582057 <br />
