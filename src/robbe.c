@@ -222,6 +222,8 @@ PHP_FUNCTION(rb_split)
 			//zend_printf("key: %s, value: %d<br />", _key, (*data)->value.lval);
 			if ( strcmp(_key, "max_len") == 0 )
 				nconfig->max_len = (*data)->value.lval;
+			else if ( strcmp(_key, "r_name") == 0 )
+				nconfig->r_name = (*data)->value.lval;
 			else if ( strcmp(_key, "mix_len") == 0 )
 				nconfig->mix_len = (*data)->value.lval;
 			else if ( strcmp(_key, "lna_len") == 0 )
