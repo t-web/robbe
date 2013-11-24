@@ -27,7 +27,12 @@
 #include "ext/standard/info.h"
 #include "php_robbe.h"
 
-#define __ROBBE_VERSION__ "1.4"
+#define __ROBBE_VERSION__ "1.5"
+#ifdef _WIN32
+#	define robbe_default_ifile "c:/windows/friso.ini"
+#else
+#	define robbe_default_ifile "/etc/friso/friso.ini"
+#endif
 
 //ZEND_DECLARE_MODULE_GLOBALS(robbe)
 zend_robbe_globals robbe_globals;
@@ -40,9 +45,9 @@ static int le_robbe = 1;
  * Every user visible function must have an entry in robbe_functions[].
  */
 zend_function_entry robbe_functions[] = {
-	PHP_FE(rb_split,	NULL)
+	PHP_FE(rb_split,		NULL)
 	PHP_FE(rb_dic_exist,	NULL)
-	PHP_FE(rb_dic_get,	NULL)
+	PHP_FE(rb_dic_get,		NULL)
 	PHP_FE(rb_utf8_bytes,	NULL)
 	PHP_FE(rb_utf8_ucode,	NULL)
 	PHP_FE(rb_ucode_utf8,	NULL)
@@ -78,15 +83,17 @@ ZEND_GET_MODULE(robbe)
  */
 /* Remove comments and fill if you need to have entries in php.ini*/
 PHP_INI_BEGIN()
-    PHP_INI_ENTRY("robbe.ini_file", ".", PHP_INI_SYSTEM, NULL)
+    PHP_INI_ENTRY("robbe.ini_file", robbe_default_ifile, PHP_INI_SYSTEM, NULL)
 PHP_INI_END()
 /* }}} */
 
 /* {{{ php_robbe_globals_construct */
 static void php_robbe_globals_construct(zend_robbe_globals *robbe_globals)
 {
-	robbe_globals->robbe_friso = friso_new_from_ifile( INI_STR("robbe.ini_file") );
-	robbe_globals->friso_dic = robbe_globals->robbe_friso->dic;
+	robbe_globals->friso = friso_new();
+	robbe_globals->config = friso_new_config();
+	friso_init_from_ifile(robbe_globals->friso,
+			robbe_globals->config, INI_STR("robbe.ini_file"));
 }
 /* }}} */
 
@@ -100,7 +107,8 @@ static void php_robbe_globals_destruct(zend_robbe_globals *robbe_globals)
 	 */
 	//friso_dic_free( robbe_globals->friso_dic );
 	//robbe_globals->friso_dic = NULL;
-	friso_free( robbe_globals->robbe_friso );
+	friso_free_config( robbe_globals->config );
+	friso_free( robbe_globals->friso );
 }
 /* }}} */
 
@@ -184,43 +192,76 @@ PHP_MINFO_FUNCTION(robbe)
    Return a array contains all the split result with a specified mode */
 PHP_FUNCTION(rb_split)
 {
-	char *__str__ = NULL;
-	int str_len, __idx__;
-	unsigned long __mode__;
-	zval *__result__;
+	char *_str = NULL, *_key;
+	int slen, idx, klen;
+
+	zval *ret, *cfg, **data;
+	HashTable *cfgArr;
+	HashPosition pointer;
 
 	friso_task_t task;
-	friso_t friso = robbe_globals.robbe_friso;
+	friso_config_t nconfig = NULL;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sl", &__str__, &str_len, &__mode__) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz", &_str, &slen, &cfg) == FAILURE) {
 		return;
 	}
 
+	//check and initialize the friso.
+	if ( Z_TYPE_P(cfg) != IS_NULL ) {
+		nconfig = friso_new_config();
+		memcpy(nconfig, robbe_globals.config, sizeof(friso_config_entry));
+
+		//check the new setting.
+		cfgArr = Z_ARRVAL_P(cfg);
+		//zend_printf("array length: %d", zend_hash_num_elements(cfgArr));
+		for ( zend_hash_internal_pointer_reset_ex(cfgArr, &pointer); 
+			zend_hash_get_current_data_ex(cfgArr, (void **)&data, &pointer) == SUCCESS;
+			zend_hash_move_forward_ex(cfgArr, &pointer) ) 
+		{
+			zend_hash_get_current_key_ex(cfgArr, &_key, &klen, NULL, 0, &pointer);
+			//zend_printf("key: %s, value: %d<br />", _key, (*data)->value.lval);
+			if ( strcmp(_key, "max_len") == 0 )
+				nconfig->max_len = (*data)->value.lval;
+			else if ( strcmp(_key, "mix_len") == 0 )
+				nconfig->mix_len = (*data)->value.lval;
+			else if ( strcmp(_key, "lna_len") == 0 )
+				nconfig->lna_len = (*data)->value.lval;
+			else if ( strcmp(_key, "add_syn") == 0 )
+				nconfig->add_syn = (*data)->value.lval;
+			else if ( strcmp(_key, "clr_stw") == 0 )
+				nconfig->clr_stw = (*data)->value.lval;
+			else if ( strcmp(_key, "add_syn") == 0 )
+				nconfig->add_syn = (*data)->value.lval;
+			else if ( strcmp(_key, "keep_urec") == 0 )
+				nconfig->keep_urec = (*data)->value.lval;
+			else if ( strcmp(_key, "spx_out") == 0 )
+				nconfig->spx_out = (*data)->value.lval;
+			else if ( strcmp(_key, "nthreshold") == 0 )
+				nconfig->nthreshold = (*data)->value.lval;
+			else if ( strcmp(_key, "mode") == 0 )
+				nconfig->mode = (friso_mode_t) (*data)->value.lval;
+		}
+	}
+ 
 	//initialize the array.
-	MAKE_STD_ZVAL( __result__ );
-	array_init( __result__ );
+	MAKE_STD_ZVAL( ret );
+	array_init( ret );
 
 	//create a new friso task.
 	task = friso_new_task();
-	if ( ! ( __mode__ == 1 || __mode__ == 2 ) )
-		__mode__ = friso->mode;
-
-	__idx__ = 0;
-	friso_set_text(task, __str__);
-	while ( friso_next( friso, __mode__, task ) != NULL ) {
-		add_index_string( __result__, __idx__++, task->hits->word, 1 );
-		//if ( task->hits->type == __FRISO_NEW_WORDS__ ) {
-		//	add_index_string( __result__, __idx__++, task->hits->word, 1 );
-		//	FRISO_FREE( task->hits->word );
-		//} else {
-		//	add_index_string( __result__, __idx__++, task->hits->word, 1 );
-		//}
+	idx = 0;
+	friso_set_text(task, _str);
+	while ( friso_next( robbe_globals.friso,
+			nconfig == NULL ? robbe_globals.config : nconfig, task ) != NULL ) {
+		add_index_string( ret, idx++, task->hits->word, 1 );
 	}
+
 	//free the friso task.
 	friso_free_task(task);
+	if ( nconfig != NULL ) friso_free_config(nconfig);
 
-	//RETURN_ZVAL( __result__, 0, 0);
-	*( return_value ) = *( __result__ );
+	//RETURN_ZVAL( ret, 0, 0);
+	*( return_value ) = *( ret );
 }
 /* }}} */
 
@@ -228,19 +269,21 @@ PHP_FUNCTION(rb_split)
    Return a bool to confirm that the given str is a word in a specified dictionary. */
 PHP_FUNCTION(rb_dic_exist)
 {
-	char *__word__ = NULL;
+	char *word = NULL;
 	int wlen;
-	long __type__;
+	long type;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ls", &__type__, &__word__, &wlen) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ls", &type, &word, &wlen) == FAILURE) {
 		return;
 	}
 
-	if ( __type__ < 0 || __type__ >= __FRISO_LEXICON_LENGTH__ ) {
-		__type__ = __LEX_CJK_WORDS__;
-	}
+	if ( robbe_globals.friso->dic == NULL )
+		RETURN_BOOL(0);
 
-	wlen = friso_dic_match( robbe_globals.friso_dic, __type__, __word__ );
+	if ( type < 0 || type >= __FRISO_LEXICON_LENGTH__ )
+		type = __LEX_CJK_WORDS__;
+
+	wlen = friso_dic_match( robbe_globals.friso->dic, type, word );
 
 	RETURN_BOOL(wlen);
 }
@@ -250,28 +293,32 @@ PHP_FUNCTION(rb_dic_exist)
    Return a array contains all the information of the given word.*/
 PHP_FUNCTION(rb_dic_get)
 {
-	char *__word__ = NULL;
+	char *word = NULL;
 	int wlen;
-	long __type__;
-	zval *__entry__;
+	long type;
+	zval *entry;
 	lex_entry_t e;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ls", &__type__, &__word__, &wlen) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ls", &type, &word, &wlen) == FAILURE) {
 		return;
 	}
 
-	MAKE_STD_ZVAL( __entry__ );
-	array_init( __entry__ );
+	//check the dictionary
+	if ( robbe_globals.friso->dic == NULL )
+		RETURN_BOOL(0);
 
-	if ( __type__ < 0 || __type__ >= __FRISO_LEXICON_LENGTH__ ) {
-		__type__ = __LEX_CJK_WORDS__;
+	MAKE_STD_ZVAL( entry );
+	array_init( entry );
+
+	if ( type < 0 || type >= __FRISO_LEXICON_LENGTH__ ) {
+		type = __LEX_CJK_WORDS__;
 	}
 
-	e = friso_dic_get( robbe_globals.friso_dic, __type__, __word__ );
+	e = friso_dic_get( robbe_globals.friso->dic, type, word );
 	if ( e != NULL ) {
-		add_assoc_long( __entry__, "length", e->length);
-		add_assoc_long( __entry__, "freq", e->fre );
-		*( return_value ) = * ( __entry__ );
+		add_assoc_long( entry, "length", e->length);
+		add_assoc_long( entry, "freq", e->fre );
+		*( return_value ) = * ( entry );
 		return;
 	}
 
@@ -283,18 +330,15 @@ PHP_FUNCTION(rb_dic_get)
    Return the bytes that the utf-8 char takes.*/
 PHP_FUNCTION(rb_utf8_bytes)
 {
-	char *__word__ = NULL;
+	char *word = NULL;
 	int wlen, _bytes;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &__word__, &wlen) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &word, &wlen) == FAILURE) {
 		return;
 	}
 
-	if ( __word__ == NULL ) {
-		RETURN_LONG(0);
-	} 
-
-	_bytes = get_utf8_bytes( __word__[0] );
+	if ( word == NULL ) RETURN_LONG(0);
+	_bytes = get_utf8_bytes( word[0] );
 
 	RETURN_LONG(_bytes);
 }
@@ -304,14 +348,14 @@ PHP_FUNCTION(rb_utf8_bytes)
    Return the unicode of the given utf-8 char.*/
 PHP_FUNCTION(rb_utf8_ucode)
 {
-	char *__word__ = NULL;
+	char *word = NULL;
 	int wlen, _ucode;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &__word__, &wlen) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &word, &wlen) == FAILURE) {
 		return;
 	}
 
-	_ucode = get_utf8_unicode( __word__ );
+	_ucode = get_utf8_unicode( word );
 
 	RETURN_LONG(_ucode);
 }
@@ -321,18 +365,18 @@ PHP_FUNCTION(rb_utf8_ucode)
    Return char that the a unicode pointed to.*/
 PHP_FUNCTION(rb_ucode_utf8)
 {
-	unsigned long *__ucode__ = NULL;
+	unsigned long *ucode = NULL;
 	int _bytes;
-	char __word__[7];
+	char word[7];
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &__ucode__ ) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &ucode ) == FAILURE) {
 		return;
 	}
 
-	_bytes = unicode_to_utf8( ( size_t ) __ucode__, __word__ );
-	__word__[_bytes] = '\0';
+	_bytes = unicode_to_utf8( ( size_t ) ucode, word );
+	word[_bytes] = '\0';
 
-	RETURN_STRINGL( __word__, _bytes, 1 );
+	RETURN_STRINGL( word, _bytes, 1 );
 }
 /* }}} */
 
