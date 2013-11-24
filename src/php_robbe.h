@@ -57,8 +57,8 @@ PHP_FUNCTION(rb_ucode_utf8);
   friso_dic_t robbe_dic;
 ZEND_END_MODULE_GLOBALS(robbe)*/
 typedef struct {
-  friso_t robbe_friso;
-  friso_dic_t friso_dic;
+  friso_t friso;
+  friso_config_t config;
 } zend_robbe_globals;
 
 
