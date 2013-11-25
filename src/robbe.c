@@ -220,6 +220,8 @@ PHP_FUNCTION(rb_split)
 		{
 			zend_hash_get_current_key_ex(cfgArr, &_key, &klen, NULL, 0, &pointer);
 			//zend_printf("key: %s, value: %d<br />", _key, (*data)->value.lval);
+			//convert the data to long.
+			convert_to_long_ex(data);
 			if ( strcmp(_key, "max_len") == 0 )
 				nconfig->max_len = (*data)->value.lval;
 			else if ( strcmp(_key, "r_name") == 0 )
