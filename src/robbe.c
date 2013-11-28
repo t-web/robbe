@@ -223,25 +223,25 @@ PHP_FUNCTION(rb_split)
 			//convert the data to long.
 			convert_to_long_ex(data);
 			if ( strcmp(_key, "max_len") == 0 )
-				nconfig->max_len = (*data)->value.lval;
+				nconfig->max_len = (ushort_t)(*data)->value.lval;
 			else if ( strcmp(_key, "r_name") == 0 )
-				nconfig->r_name = (*data)->value.lval;
+				nconfig->r_name = (ushort_t)(*data)->value.lval;
 			else if ( strcmp(_key, "mix_len") == 0 )
-				nconfig->mix_len = (*data)->value.lval;
+				nconfig->mix_len = (ushort_t)(*data)->value.lval;
 			else if ( strcmp(_key, "lna_len") == 0 )
-				nconfig->lna_len = (*data)->value.lval;
+				nconfig->lna_len = (ushort_t)(*data)->value.lval;
 			else if ( strcmp(_key, "add_syn") == 0 )
-				nconfig->add_syn = (*data)->value.lval;
+				nconfig->add_syn = (ushort_t)(*data)->value.lval;
 			else if ( strcmp(_key, "clr_stw") == 0 )
-				nconfig->clr_stw = (*data)->value.lval;
+				nconfig->clr_stw = (ushort_t)(*data)->value.lval;
 			else if ( strcmp(_key, "add_syn") == 0 )
-				nconfig->add_syn = (*data)->value.lval;
+				nconfig->add_syn = (ushort_t)(*data)->value.lval;
 			else if ( strcmp(_key, "keep_urec") == 0 )
-				nconfig->keep_urec = (*data)->value.lval;
+				nconfig->keep_urec = (ushort_t)(*data)->value.lval;
 			else if ( strcmp(_key, "spx_out") == 0 )
-				nconfig->spx_out = (*data)->value.lval;
+				nconfig->spx_out = (ushort_t)(*data)->value.lval;
 			else if ( strcmp(_key, "nthreshold") == 0 )
-				nconfig->nthreshold = (*data)->value.lval;
+				nconfig->nthreshold = (uint_t) (*data)->value.lval;
 			else if ( strcmp(_key, "mode") == 0 )
 				nconfig->mode = (friso_mode_t) (*data)->value.lval;
 		}
