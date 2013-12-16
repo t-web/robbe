@@ -45,6 +45,9 @@ PHP_RSHUTDOWN_FUNCTION(robbe);
 PHP_MINFO_FUNCTION(robbe);
 
 PHP_FUNCTION(rb_split);
+PHP_FUNCTION(rb_version);
+PHP_FUNCTION(friso_version);
+PHP_FUNCTION(rb_charset);
 PHP_FUNCTION(rb_dic_exist);
 PHP_FUNCTION(rb_dic_get);
 PHP_FUNCTION(rb_utf8_bytes);

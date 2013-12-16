@@ -27,7 +27,7 @@
 #include "ext/standard/info.h"
 #include "php_robbe.h"
 
-#define __ROBBE_VERSION__ "1.5"
+#define __ROBBE_VERSION__ "1.6.0"
 #ifdef _WIN32
 #	define robbe_default_ifile "c:/windows/friso.ini"
 #else
@@ -46,6 +46,9 @@ static int le_robbe = 1;
  */
 zend_function_entry robbe_functions[] = {
 	PHP_FE(rb_split,		NULL)
+	PHP_FE(rb_version,		NULL)
+	PHP_FE(friso_version,	NULL)
+	PHP_FE(rb_charset,		NULL)
 	PHP_FE(rb_dic_exist,	NULL)
 	PHP_FE(rb_dic_get,		NULL)
 	PHP_FE(rb_utf8_bytes,	NULL)
@@ -266,6 +269,31 @@ PHP_FUNCTION(rb_split)
 
 	//RETURN_ZVAL( ret, 0, 0);
 	*( return_value ) = *( ret );
+}
+/* }}} */
+
+/* {{{ proto string rb_version()
+   Return the current version of robbe. */
+PHP_FUNCTION(rb_version)
+{
+	RETURN_STRINGL(__ROBBE_VERSION__, strlen(__ROBBE_VERSION__), 1);
+}
+/* }}} */
+
+/* {{{ proto string friso_version()
+   Return the current version of Friso. */
+PHP_FUNCTION(friso_version)
+{
+	RETURN_STRINGL(FRISO_VERSION, strlen(FRISO_VERSION), 1);
+}
+/* }}} */
+
+/* {{{ proto string rb_charset()
+   Return the current charset of friso. */
+PHP_FUNCTION(rb_charset)
+{
+	char *charset = robbe_globals.friso->charset == FRISO_UTF8 ? "UTF-8" : "GBK";
+	RETURN_STRINGL(charset, strlen(charset), 1);
 }
 /* }}} */
 
