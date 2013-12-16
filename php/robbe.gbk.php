@@ -1,6 +1,14 @@
 <?php
-header('content-type:text/html;charset:utf-8');
+header('content-type:text/html;charset:GBK');
 ini_set('magic_quotes_gpc', 0);
+
+//check the charset
+if ( rb_charset() != "GBK" ) {
+	$_str  = "Error: GBK charset required. <br />";
+	$_str .= "1. Modified friso.charset = 1 in your friso.ini .<br />";
+	$_str .= "2. Modified friso.lex_dir = GBK lexicon abusolute path to load your GBK lexicon. <br />";
+	exit($_str);
+}
 
 $text = '';
 $_timer = 0;
@@ -29,8 +37,8 @@ function timer() {
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 
 <head>
-	<title>robbeåˆ†è¯æµ‹è¯•ç¨‹åº</title>
-	<meta http-equiv="content-type" content="text/html;charset=utf-8" />
+	<title>GBK - robbe·Ö´Ê²âÊÔ³ÌĞò </title>
+	<meta http-equiv="content-type" content="text/html;charset=GBK" />
 	<style type="text/css">
 		#box {width: 1000px}
 		.input-text {border: 1px solid #CCC;width: 1000px;height: 200px;background-color: #FFF;
@@ -57,50 +65,50 @@ function timer() {
 
 <body>
 	<div id="box">
-		<form name="robbe" method="post" action="robbe.tst.php">
-		<div class="title-item">åˆ†è¯é…ç½®ï¼š</div>
+		<form name="robbe" method="post" action="robbe.gbk.php">
+		<div class="title-item">·Ö´ÊÅäÖÃ£º</div>
 		<div id="cfg-box">
 			<div>
-				<label>æœ€å¤§è¯é•¿: </label>
+				<label>×î´ó´Ê³¤: </label>
 				<input type="text" name="config[max_len]" value="<?=isset($_cfg['max_len'])?$_cfg['max_len']:5?>" class="input" />
 			</div>
 			<div>
-				<label>æ··åˆè¯ä¸­æ–‡è¯é•¿: </label>
+				<label>»ìºÏ´ÊÖĞÎÄ´Ê³¤: </label>
 				<input type="text" name="config[mix_len]" value="<?=isset($_cfg['mix_len'])?$_cfg['mix_len']:2?>" class="input" />
 			</div>
 			<div>
-				<label>åŒä¹‰è¯è¿½åŠ : </label>
+				<label>Í¬Òå´Ê×·¼Ó: </label>
 				<input type="checkbox" name="config[add_syn]" <?=isset($_cfg['add_syn'])&&$_cfg['add_syn']==1?'checked="checked"':''?> value="1" />
 			</div>
 			<div>
-				<label>è¿‡æ»¤åœæ­¢è¯: </label>
+				<label>¹ıÂËÍ£Ö¹´Ê: </label>
 				<input type="checkbox" name="config[clr_stw]" <?=isset($_cfg['clr_stw'])&&$_cfg['clr_stw']==1?'checked="checked"':''?> value="1" />
 			</div>
 			<div>
-				<label>ä¿ç•™æœªè¯†åˆ«è¯: </label>
+				<label>±£ÁôÎ´Ê¶±ğ´Ê: </label>
 				<input type="checkbox" name="config[keep_urec]" <?=isset($_cfg['keep_urec'])&&$_cfg['keep_urec']==1?'checked="checked"':''?> value="1" />
 			</div>
 			<div>
-				<label>sphinxå®šåˆ¶è¾“å‡º: </label>
+				<label>sphinx¶¨ÖÆÊä³ö: </label>
 				<input type="checkbox" name="config[spx_out]" <?=isset($_cfg['spx_out'])&&$_cfg['spx_out']==1?'checked="checked"':''?> value="1" />
 			</div>
 			<div>
-				<label>åˆ†è¯æ¨¡å¼: </label>
-				<input type="radio" name="config[mode]" value="<?=__RB_SIMPLE_MODE__?>" <?=isset($_cfg['mode'])&&$_cfg['mode']==1?'checked="checked"':''?> />ç®€æ˜“æ¨¡å¼
-				<input type="radio" name="config[mode]" value="<?=__RB_COMPLEX_MODE__?>" <?=isset($_cfg['mode'])&&$_cfg['mode']==2?'checked="checked"':''?> />å¤æ‚æ¨¡å¼
+				<label>·Ö´ÊÄ£Ê½: </label>
+				<input type="radio" name="config[mode]" value="<?=__RB_SIMPLE_MODE__?>" <?=isset($_cfg['mode'])&&$_cfg['mode']==1?'checked="checked"':''?> />¼òÒ×Ä£Ê½
+				<input type="radio" name="config[mode]" value="<?=__RB_COMPLEX_MODE__?>" <?=isset($_cfg['mode'])&&$_cfg['mode']==2?'checked="checked"':''?> />¸´ÔÓÄ£Ê½
 			</div>
 		</div>
 		
-		<div class="title-item">åˆ†è¯å†…å®¹ï¼š</div>
+		<div class="title-item">·Ö´ÊÄÚÈİ£º</div>
 		<div class="r-item"><textarea name="text" class="input-text" id="text"><?=$text?></textarea></div>
 		<input type="hidden" name="_act" value="split"/>
-		<a href="javascript:;" onclick="do_submit();return false;" id="submit-link">robbeåˆ†è¯</a>
+		<a href="javascript:;" onclick="do_submit();return false;" id="submit-link">robbe·Ö´Ê</a>
 		</form>
 
 		<?php
 		if ( $_act == 'split' ) {
 		?>
-		<div class="title-item">åˆ†è¯ç»“æœï¼š</div>
+		<div class="title-item">·Ö´Ê½á¹û£º</div>
 		<div><textarea class="input-text"><?php foreach ( $_ret as $_value ) echo $_value.' ';?>
 		</textarea></div>
 		<div class="link-box"><a id="info-link">
