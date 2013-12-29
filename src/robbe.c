@@ -12,7 +12,7 @@
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
-  | Author:                                                              |
+  | Author: chenxin <chenxin619315@gmail.com>                            |
   +----------------------------------------------------------------------+
 */
 
@@ -115,6 +115,13 @@ static void php_robbe_globals_destruct(zend_robbe_globals *robbe_globals)
 }
 /* }}} */
 
+#define RB_RET_WORD		(1 << 0)
+#define RB_RET_TYPE		(1 << 1)
+#define RB_RET_OFF		(1 << 2)
+#define RB_RET_LEN 		(1 << 3)
+#define RB_RET_RLEN		(1 << 4)
+#define RB_RET_POS		(1 << 5)
+
 /* {{{ PHP_MINIT_FUNCTION */
 PHP_MINIT_FUNCTION(robbe)
 {
@@ -123,12 +130,27 @@ PHP_MINIT_FUNCTION(robbe)
 	 *		at its following work.
 	 *	the constant is case sensitive and persitent.
 	 */
-	REGISTER_LONG_CONSTANT("__RB_SIMPLE_MODE__",	1, CONST_CS | CONST_PERSISTENT);
-	REGISTER_LONG_CONSTANT("__RB_COMPLEX_MODE__",	2, CONST_CS | CONST_PERSISTENT);
-	REGISTER_LONG_CONSTANT("__RB_LEX_CJK_WORDS__",	
-			__LEX_CJK_WORDS__, CONST_CS | CONST_PERSISTENT);
-	REGISTER_LONG_CONSTANT("__RB_LEX_STOPWORDS__",	
-			__LEX_STOPWORDS__, CONST_CS | CONST_PERSISTENT);
+	REGISTER_LONG_CONSTANT("RB_SMODE",		1, CONST_CS | CONST_PERSISTENT);
+	REGISTER_LONG_CONSTANT("RB_CMODE",		2, CONST_CS | CONST_PERSISTENT);
+	REGISTER_LONG_CONSTANT("RB_LEX_CJK",	__LEX_CJK_WORDS__, CONST_CS | CONST_PERSISTENT);
+	REGISTER_LONG_CONSTANT("RB_LEX_STOP",	__LEX_STOPWORDS__, CONST_CS | CONST_PERSISTENT);
+
+	//return parts for rb_split.
+	REGISTER_LONG_CONSTANT("RB_RET_WORD", 	RB_RET_WORD, CONST_CS | CONST_PERSISTENT);
+	REGISTER_LONG_CONSTANT("RB_RET_TYPE", 	RB_RET_TYPE, CONST_CS | CONST_PERSISTENT);
+	REGISTER_LONG_CONSTANT("RB_RET_OFF",	RB_RET_OFF, CONST_CS | CONST_PERSISTENT);
+	REGISTER_LONG_CONSTANT("RB_RET_LEN",	RB_RET_LEN, CONST_CS | CONST_PERSISTENT);
+	REGISTER_LONG_CONSTANT("RB_RET_RLEN",	RB_RET_RLEN, CONST_CS | CONST_PERSISTENT);
+	REGISTER_LONG_CONSTANT("RB_RET_POS",  	RB_RET_POS, CONST_CS | CONST_PERSISTENT);
+
+	//lex type constants.
+	REGISTER_LONG_CONSTANT("RB_TYP_CJK",  	__LEX_CJK_WORDS__, CONST_CS | CONST_PERSISTENT);
+	REGISTER_LONG_CONSTANT("RB_TYP_ECM",  	__LEX_ECM_WORDS__, CONST_CS | CONST_PERSISTENT);
+	REGISTER_LONG_CONSTANT("RB_TYP_CEM",  	__LEX_CEM_WORDS__, CONST_CS | CONST_PERSISTENT);
+	REGISTER_LONG_CONSTANT("RB_TYP_EPUN",  	__LEX_ENPUN_WORDS__, CONST_CS | CONST_PERSISTENT);
+	REGISTER_LONG_CONSTANT("RB_TYP_PUN",  	__LEX_OTHER_WORDS__, CONST_CS | CONST_PERSISTENT);
+	REGISTER_LONG_CONSTANT("RB_TYP_UNK",  	__LEX_UNKNOW_WORDS__, CONST_CS | CONST_PERSISTENT);
+	REGISTER_LONG_CONSTANT("RB_TYP_OTR",  	__LEX_OTHER_WORDS__, CONST_CS | CONST_PERSISTENT);
 
 	REGISTER_INI_ENTRIES();
 	/*initialize the globals variables.*/
@@ -196,21 +218,41 @@ PHP_MINFO_FUNCTION(robbe)
 PHP_FUNCTION(rb_split)
 {
 	char *_str = NULL, *_key;
-	int slen, idx, klen;
+	int slen, idx, klen, rargs = 0;
+	int arg_count;
 
 	zval *ret, *cfg, **data;
+	//used for multiple item return.
+	zval *item;
+
 	HashTable *cfgArr;
 	HashPosition pointer;
 
 	friso_task_t task;
 	friso_config_t nconfig = NULL;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz", &_str, &slen, &cfg) == FAILURE) {
-		return;
+	//get the arugments from the php layer.
+	arg_count = ZEND_NUM_ARGS();
+	switch ( arg_count ) 
+	{
+		case 2:
+			if ( zend_parse_parameters(arg_count TSRMLS_CC, "sz",
+				 &_str, &slen, &cfg) == FAILURE ) return;
+			break;
+		case 3:
+			if (zend_parse_parameters( arg_count TSRMLS_CC, "szl",
+				 &_str, &slen, &cfg, &rargs) == FAILURE ) return;
+			break;
+		default:
+			WRONG_PARAM_COUNT;
 	}
 
+	//make sure the RB_RET_WORD will be returned.
+	//rargs |= RB_RET_WORD; 
+
 	//check and initialize the friso.
-	if ( Z_TYPE_P(cfg) != IS_NULL ) {
+	if ( Z_TYPE_P(cfg) != IS_NULL ) 
+	{
 		nconfig = friso_new_config();
 		memcpy(nconfig, robbe_globals.config, sizeof(friso_config_entry));
 
@@ -223,30 +265,43 @@ PHP_FUNCTION(rb_split)
 		{
 			zend_hash_get_current_key_ex(cfgArr, &_key, &klen, NULL, 0, &pointer);
 			//zend_printf("key: %s, value: %d<br />", _key, (*data)->value.lval);
-			//convert the data to long.
-			convert_to_long_ex(data);
-			if ( strcmp(_key, "max_len") == 0 )
-				nconfig->max_len = (ushort_t)(*data)->value.lval;
-			else if ( strcmp(_key, "r_name") == 0 )
-				nconfig->r_name = (ushort_t)(*data)->value.lval;
-			else if ( strcmp(_key, "mix_len") == 0 )
-				nconfig->mix_len = (ushort_t)(*data)->value.lval;
-			else if ( strcmp(_key, "lna_len") == 0 )
-				nconfig->lna_len = (ushort_t)(*data)->value.lval;
-			else if ( strcmp(_key, "add_syn") == 0 )
-				nconfig->add_syn = (ushort_t)(*data)->value.lval;
-			else if ( strcmp(_key, "clr_stw") == 0 )
-				nconfig->clr_stw = (ushort_t)(*data)->value.lval;
-			else if ( strcmp(_key, "add_syn") == 0 )
-				nconfig->add_syn = (ushort_t)(*data)->value.lval;
-			else if ( strcmp(_key, "keep_urec") == 0 )
-				nconfig->keep_urec = (ushort_t)(*data)->value.lval;
-			else if ( strcmp(_key, "spx_out") == 0 )
-				nconfig->spx_out = (ushort_t)(*data)->value.lval;
-			else if ( strcmp(_key, "nthreshold") == 0 )
-				nconfig->nthreshold = (uint_t) (*data)->value.lval;
-			else if ( strcmp(_key, "mode") == 0 )
-				nconfig->mode = (friso_mode_t) (*data)->value.lval;
+			
+			if ( strcmp(_key, "kpuncs") == 0 ) 
+			{
+				memcpy(nconfig->kpuncs, (*data)->value.str.val, (*data)->value.str.len);
+				nconfig->kpuncs[(*data)->value.str.len] = '\0';
+			}
+			else 
+			{
+				//convert the data to long.
+				convert_to_long_ex(data);
+				if ( strcmp(_key, "max_len") == 0 )
+					nconfig->max_len = (ushort_t)(*data)->value.lval;
+				else if ( strcmp(_key, "r_name") == 0 )
+					nconfig->r_name = (ushort_t)(*data)->value.lval;
+				else if ( strcmp(_key, "mix_len") == 0 )
+					nconfig->mix_len = (ushort_t)(*data)->value.lval;
+				else if ( strcmp(_key, "lna_len") == 0 )
+					nconfig->lna_len = (ushort_t)(*data)->value.lval;
+				else if ( strcmp(_key, "add_syn") == 0 )
+					nconfig->add_syn = (ushort_t)(*data)->value.lval;
+				else if ( strcmp(_key, "clr_stw") == 0 )
+					nconfig->clr_stw = (ushort_t)(*data)->value.lval;
+				else if ( strcmp(_key, "add_syn") == 0 )
+					nconfig->add_syn = (ushort_t)(*data)->value.lval;
+				else if ( strcmp(_key, "keep_urec") == 0 )
+					nconfig->keep_urec = (ushort_t)(*data)->value.lval;
+				else if ( strcmp(_key, "spx_out") == 0 )
+					nconfig->spx_out = (ushort_t)(*data)->value.lval;
+				else if ( strcmp(_key, "nthreshold") == 0 )
+					nconfig->nthreshold = (uint_t) (*data)->value.lval;
+				else if ( strcmp(_key, "mode") == 0 )
+					nconfig->mode = (friso_mode_t) (*data)->value.lval;
+				else if ( strcmp(_key, "en_sseg") == 0 )
+					nconfig->en_sseg = (ushort_t) (*data)->value.lval;
+				else if ( strcmp(_key, "st_minl") == 0 )
+					nconfig->st_minl = (ushort_t) (*data)->value.lval;
+			}
 		}
 	}
  
@@ -259,8 +314,25 @@ PHP_FUNCTION(rb_split)
 	idx = 0;
 	friso_set_text(task, _str);
 	while ( friso_next( robbe_globals.friso,
-			nconfig == NULL ? robbe_globals.config : nconfig, task ) != NULL ) {
-		add_index_string( ret, idx++, task->hits->word, 1 );
+			nconfig == NULL ? robbe_globals.config : nconfig, task ) != NULL ) 
+	{
+		MAKE_STD_ZVAL(item);
+		array_init(item);
+		add_assoc_string(item, "word", task->hits->word, 1);
+		//check the append of type
+		if ( (rargs & RB_RET_TYPE) != 0 )
+			add_assoc_long(item, "type", task->hits->type);
+		if ( (rargs & RB_RET_LEN) != 0 )
+			add_assoc_long(item, "len", task->hits->length);
+		if ( (rargs & RB_RET_RLEN) != 0 )
+			add_assoc_long(item, "rlen", task->hits->rlen);
+		if ( (rargs & RB_RET_OFF) != 0 )
+			add_assoc_long(item, "off", task->hits->offset);
+		if ( (rargs & RB_RET_POS) != 0 )
+			add_assoc_stringl(item, "pos", &task->hits->pos, 1, 1);
+		
+		//append the sub result.
+		add_index_zval( ret, idx++, item );
 	}
 
 	//free the friso task.

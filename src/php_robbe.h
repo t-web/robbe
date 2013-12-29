@@ -35,8 +35,8 @@ extern zend_module_entry robbe_module_entry;
 #include "TSRM.h"
 #endif
 
-#include "friso_API.h"
-#include "friso.h"
+#include <friso/friso_API.h>
+#include <friso/friso.h>
 
 PHP_MINIT_FUNCTION(robbe);
 PHP_MSHUTDOWN_FUNCTION(robbe);
