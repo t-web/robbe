@@ -24,6 +24,12 @@ if ( rb_charset() == 'UTF-8' )
 	$_str = "研究生命起源,robbe高性能php中文分词组件。";
 	echo "rb_split(\"" . $_str . "\")：<br />";
 	
+	//API:
+	//rb_split(string, Array, [long])
+	//1.string: 要被切分的字符串。
+	//2.Array: 配置选项，使用NULL来选择默认的配置(friso.ini中的配置)。
+	//3.long: 可选参数，自定义切分返回选项，查看下面的$_rargs
+	
 	//1.完整的配置: 
 	//array('max_len'=>5, 'r_name'=>0, 'mix_len'=>2, 'lna_len'=>1, 'add_syn'=>1,
 	//	'clr_stw'=>1, 'keep_urec'=>0, 'spx_out'=>0, 'en_sseg'=> 1, 'st_minl'=>2, 'kpuncs'=>'.+#', 'mode'=>RB_CMODE);
@@ -34,6 +40,7 @@ if ( rb_charset() == 'UTF-8' )
 	//词条: RB_RET_WORD, 类别：RB_RET_TYPE, 长度：RB_RET_LENGTH, 真实长度：RB_RET_RLEN, 偏移量：RB_RET_OFF
 	//词性：RB_RET_POS(待实现)
 	$_rargs = RB_RET_TYPE | RB_RET_LEN | RB_RET_RLEN | RB_RET_OFF | RB_RET_POS;
+	//$_rargs = 0;
 	
 	//3.切分类别：
 	//CJK词条：RB_TYP_CJK, 英中混合词(b超)：RB_TYP_ECM，中英混合词(卡拉ok)：RB_TYP_CEM，
@@ -43,23 +50,22 @@ if ( rb_charset() == 'UTF-8' )
 	foreach ( $_result as $_val )
 	{
 		$_str = $_val['word'];
-		if ( $_rargs == 0 ) {
-			$_str .= '/ ';
-			continue;
+		if ( $_rargs != 0 ) {
+			$_str .= '[';
+			if ( ($_rargs & RB_RET_TYPE) != 0 )
+				$_str .= ', type: '.$_val['type'];
+			if ( ($_rargs * RB_RET_LEN) )
+			$_str .= ', len: ' . $_val['len'];
+			if ( ($_rargs * RB_RET_RLEN) )
+			$_str .= ', rlen: ' . $_val['rlen'];
+			if ( ($_rargs * RB_RET_OFF) )
+			$_str .= ', off: ' . $_val['off'];
+			if ( ($_rargs * RB_RET_POS) )
+				$_str .= ', pos: ' . $_val['pos'];
+			$_str .= ']';
 		}
-		$_str .= '[';
-		if ( ($_rargs & RB_RET_TYPE) != 0 )
-			$_str .= ', type: '.$_val['type'];
-		if ( ($_rargs * RB_RET_LEN) )
-		$_str .= ', len: ' . $_val['len'];
-		if ( ($_rargs * RB_RET_RLEN) )
-		$_str .= ', rlen: ' . $_val['rlen'];
-		if ( ($_rargs * RB_RET_OFF) )
-		$_str .= ', off: ' . $_val['off'];
-		if ( ($_rargs * RB_RET_POS) )
-			$_str .= ', pos: ' . $_val['pos'];
-		$_str .= ']/ ';
-		
+
+		$_str .= '/ ';
 		echo $_str;
 	}
 }
