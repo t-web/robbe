@@ -122,7 +122,7 @@ function timer() {
 		if ( $_act == 'split' ) {
 		?>
 		<div class="title-item">·Ö´Ê½á¹û£º</div>
-		<div><textarea class="input-text"><?php foreach ( $_ret as $_value ) echo $_value.' ';?>
+		<div><textarea class="input-text"><?php foreach ( $_ret as $_val ) echo $_val['word'].' ';?>
 		</textarea></div>
 		<div class="link-box"><a id="info-link">
 			<?php
