@@ -13,7 +13,7 @@ if ( rb_charset() != "UTF-8" ) {
 $text = '';
 $_timer = 0;
 $_act = '';
-$_cfg = array('mode' => __RB_COMPLEX_MODE__);
+$_cfg = array('mode' => RB_CMODE);
 if ( isset($_POST['_act']) && ($_act = $_POST['_act']) == 'split' ) {
 	$text = &$_POST['text'];
 	$_cfg = &$_POST['config'];
@@ -21,6 +21,7 @@ if ( isset($_POST['_act']) && ($_act = $_POST['_act']) == 'split' ) {
 	if ( ! isset($_cfg['clr_stw']) )	$_cfg['clr_stw'] = 0;
 	if ( ! isset($_cfg['keep_urec']) )	$_cfg['keep_urec'] = 0;
 	if ( ! isset($_cfg['spx_out']) )	$_cfg['spx_out'] = 0;
+	if ( ! isset($_cfg['en_sseg']) )	$_cfg['en_sseg'] = 0;
 	
 	$s_time = timer();
 	$_ret = rb_split($text, $_cfg);
@@ -41,7 +42,7 @@ function timer() {
 	<meta http-equiv="content-type" content="text/html;charset=utf-8" />
 	<style type="text/css">
 		#box {width: 1000px}
-		.input-text {border: 1px solid #CCC;width: 1000px;height: 200px;background-color: #FFF;
+		.input-text {border: 1px solid #CCC;width: 1000px;height: 180px;background-color: #FFF;
 			color: #555;font-size: 14px;}
 		.link-box {overflow: hidden;zoom:1;padding-top:10px;}
 		#submit-link {float:right;width:150px;height: 26px;line-height: 26px;
@@ -56,9 +57,9 @@ function timer() {
 		
 		#cfg-box {margin-bottom: 10px;}
 		#cfg-box div {overflow: hidden;zoom:1;color:#555;font-size:12px;}
-		#cfg-box div label {float: left;width: 150px;height: 26px;line-height:26px;text-align:right;
+		#cfg-box div label {float: left;width: 160px;height: 26px;line-height:26px;text-align:right;
 			padding-right:10px;font-size:12px;font-weight:bold;color:#555;}
-		.input {border: 1px solid #DDD;height: 18px;line-height: 18px;padding-left: 5px;width: 60px;
+		.input {border: 1px solid #DDD;height: 18px;line-height: 18px;padding-left: 5px;width: 120px;
 			color:#555; outline: none;}
 	</style>
 </head>
@@ -75,6 +76,18 @@ function timer() {
 			<div>
 				<label>混合词中文词长: </label>
 				<input type="text" name="config[mix_len]" value="<?=isset($_cfg['mix_len'])?$_cfg['mix_len']:2?>" class="input" />
+			</div>
+			<div>
+				<label>英文二次切分: </label>
+				<input type="checkbox" name="config[en_sseg]" <?=isset($_cfg['en_sseg'])&&$_cfg['en_sseg']==1?'checked="checked"':''?> value="1" />
+			</div>
+			<div>
+				<label>二次切分子Token最小长度: </label>
+				<input type="text" name="config[st_minl]" value="<?=isset($_cfg['st_minl'])?$_cfg['st_minl']:2?>" class="input" />
+			</div>
+			<div>
+				<label>英文Token中保留的标点: </label>
+				<input type="text" name="config[kpuncs]" value="<?=isset($_cfg['kpuncs'])?$_cfg['kpuncs']:'@%.#&+'?>" class="input" />
 			</div>
 			<div>
 				<label>同义词追加: </label>
@@ -94,8 +107,8 @@ function timer() {
 			</div>
 			<div>
 				<label>分词模式: </label>
-				<input type="radio" name="config[mode]" value="<?=__RB_SIMPLE_MODE__?>" <?=isset($_cfg['mode'])&&$_cfg['mode']==1?'checked="checked"':''?> />简易模式
-				<input type="radio" name="config[mode]" value="<?=__RB_COMPLEX_MODE__?>" <?=isset($_cfg['mode'])&&$_cfg['mode']==2?'checked="checked"':''?> />复杂模式
+				<input type="radio" name="config[mode]" value="<?=RB_SMODE?>" <?=isset($_cfg['mode'])&&$_cfg['mode']==1?'checked="checked"':''?> />简易模式
+				<input type="radio" name="config[mode]" value="<?=RB_CMODE?>" <?=isset($_cfg['mode'])&&$_cfg['mode']==2?'checked="checked"':''?> />复杂模式
 			</div>
 		</div>
 		
