@@ -53,15 +53,15 @@ if ( rb_charset() == 'UTF-8' )
 		if ( $_rargs != 0 ) {
 			$_str .= '[';
 			if ( ($_rargs & RB_RET_TYPE) != 0 )
-				$_str .= ', type: '.$_val['type'];
+				$_str .= ', type: '.$_val['type'];		//获取词条类别
 			if ( ($_rargs * RB_RET_LEN) )
-			$_str .= ', len: ' . $_val['len'];
-			if ( ($_rargs * RB_RET_RLEN) )
-			$_str .= ', rlen: ' . $_val['rlen'];
-			if ( ($_rargs * RB_RET_OFF) )
-			$_str .= ', off: ' . $_val['off'];
-			if ( ($_rargs * RB_RET_POS) )
-				$_str .= ', pos: ' . $_val['pos'];
+			$_str .= ', len: ' . $_val['len'];			//词条长度
+			if ( ($_rargs & RB_RET_RLEN) != 0 )
+			$_str .= ', rlen: ' . $_val['rlen'];		//词条真实长度
+			if ( ($_rargs * RB_RET_OFF) != 0 )
+			$_str .= ', off: ' . $_val['off'];			//词条偏移量
+			if ( ($_rargs & RB_RET_POS) != 0 )
+				$_str .= ', pos: ' . $_val['pos'];		//词条词性
 			$_str .= ']';
 		}
 
