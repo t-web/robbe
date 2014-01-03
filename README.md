@@ -20,6 +20,7 @@ robbe是建立在friso中文分词上的一个高性能php中文分词扩展。�
 
 
 <h3>三. 安装配置: </h3>
+提示：请选择同版本的Friso来兼容<br />
 Robbe官方首页: http://code.google.com/p/robbe <br />
 开源中国讨论区: http://www.oschina.net/question/853816_119031 <br />
 Ueaner博客文档: http://blog.aboutc.net/php/59/php-installation-robbe-chinese-word-extension <br />
